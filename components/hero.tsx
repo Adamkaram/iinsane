@@ -7,6 +7,7 @@ import ParticlesBackground from "./particles-background"
 export function Hero() {
   const [hovering, setHovering] = useState(false)
   const [startVisuals, setStartVisuals] = useState(false)
+  const [showAudioPrompt, setShowAudioPrompt] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
@@ -16,20 +17,30 @@ export function Hero() {
     }, 5758)
 
     // Attempt to play audio
-    if (audioRef.current) {
-      audioRef.current.volume = 0.5
-      const playPromise = audioRef.current.play()
-
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.log("Auto-play was prevented. User interaction is required to play audio.")
-          // Optional: Add a UI element to ask user to play if needed
-        })
+    const playAudio = async () => {
+      if (audioRef.current) {
+        audioRef.current.volume = 0.5
+        try {
+          await audioRef.current.play()
+          setShowAudioPrompt(false)
+        } catch (error) {
+          console.log("Auto-play prevented. Showing audio prompt.")
+          setShowAudioPrompt(true)
+        }
       }
     }
 
+    playAudio()
+
     return () => clearTimeout(timer)
   }, [])
+
+  const enableAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.play()
+      setShowAudioPrompt(false)
+    }
+  }
 
   return (
     <div className="flex flex-col h-svh justify-between relative bg-black">
@@ -111,6 +122,37 @@ export function Hero() {
           >
             <GL hovering={hovering} />
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Audio Prompt Button */}
+      <AnimatePresence>
+        {showAudioPrompt && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={enableAudio}
+            className="absolute bottom-8 right-8 z-50 px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white/90 hover:bg-white/20 transition-all flex items-center gap-3 cursor-pointer group"
+            style={{ fontFamily: "var(--font-geist-mono)" }}
+          >
+            <span className="text-xs uppercase tracking-widest">Enable Sound</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="group-hover:scale-110 transition-transform"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </motion.button>
         )}
       </AnimatePresence>
 
