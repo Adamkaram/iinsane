@@ -207,7 +207,7 @@ export function Hero() {
               className={`text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-center ${startVisuals ? 'gradient-text glitch' : ''}`}
               data-text="stay human"
               style={{
-                fontFamily: "var(--font-instrument-serif)",
+                fontFamily: "Ather, serif",
                 color: startVisuals ? undefined : "#666",
                 filter: startVisuals ? undefined : "none"
               }}
@@ -220,15 +220,7 @@ export function Hero() {
               transition={{ duration: 1, delay: startVisuals ? 0.5 : 0, ease: "easeOut" }}
               className="divider"
             />
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: startVisuals ? 1 : 0 }}
-              transition={{ duration: 1, delay: startVisuals ? 0.2 : 0, ease: "easeOut" }}
-              className="text-sm sm:text-base md:text-lg text-balance mt-8 max-w-[440px] mx-auto glow-text text-center"
-              style={{ fontFamily: "var(--font-geist-mono)" }}
-            >
-              stay tuned
-            </motion.p>
+
           </motion.div>
         )}
       </div>
