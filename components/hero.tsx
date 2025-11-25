@@ -192,7 +192,8 @@ export function Hero() {
             animate={{
               y: startVisuals ? 0 : "-45vh",
               scale: startVisuals ? 1 : 1.5,
-              opacity: 1
+              opacity: 1,
+              filter: startVisuals ? "grayscale(0)" : "grayscale(1)"
             }}
             transition={{
               duration: 2,
