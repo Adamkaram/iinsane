@@ -6,79 +6,111 @@ import ParticlesBackground from "./particles-background"
 
 export function Hero() {
   const [hovering, setHovering] = useState(false)
+  const [isReady, setIsReady] = useState(false) // New state: Is the user ready/permission granted?
   const [startVisuals, setStartVisuals] = useState(false)
-  const [showAudioPrompt, setShowAudioPrompt] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const startTimeRef = useRef<number>(0)
 
+  // Check for autoplay capability on mount
   useEffect(() => {
-    // Record start time
-    startTimeRef.current = Date.now()
-
-    // Delay visuals by exactly 5.758 seconds
-    const timer = setTimeout(() => {
-      setStartVisuals(true)
-    }, 5758)
-
-    // Attempt to play audio
-    const playAudio = async () => {
+    const checkAutoplay = async () => {
       if (audioRef.current) {
         audioRef.current.volume = 0.5
         try {
           await audioRef.current.play()
-          // If successful, prompt is already hidden by default or onPlay listener
+          // If successful, we are ready immediately
+          setIsReady(true)
         } catch (error) {
-          console.log("Auto-play prevented. Showing audio prompt.")
-          setShowAudioPrompt(true)
+          // If failed (mobile/policy), we stay in "not ready" state
+          // and wait for user interaction
+          console.log("Auto-play prevented. Waiting for user permission.")
+          setIsReady(false)
         }
       }
     }
-
-    // Safety: Ensure prompt is hidden if audio starts playing by any means
-    const onPlay = () => setShowAudioPrompt(false)
-    const audioEl = audioRef.current
-
-    if (audioEl) {
-      audioEl.addEventListener('play', onPlay)
-    }
-
-    playAudio()
-
-    return () => {
-      clearTimeout(timer)
-      if (audioEl) {
-        audioEl.removeEventListener('play', onPlay)
-      }
-    }
+    checkAutoplay()
   }, [])
 
-  const enableAudio = () => {
+  // Start the sequence ONLY when ready
+  useEffect(() => {
+    if (!isReady) return
+
+    // Delay visuals by exactly 5.758 seconds AFTER ready
+    const timer = setTimeout(() => {
+      setStartVisuals(true)
+    }, 5758)
+
+    return () => clearTimeout(timer)
+  }, [isReady])
+
+  const handlePermission = (allowAudio: boolean) => {
     if (audioRef.current) {
-      // Calculate elapsed time since mount in seconds
-      const elapsed = (Date.now() - startTimeRef.current) / 1000
-
-      // Set current time (handling loop if duration is available)
-      if (audioRef.current.duration && !isNaN(audioRef.current.duration)) {
-        audioRef.current.currentTime = elapsed % audioRef.current.duration
+      if (allowAudio) {
+        audioRef.current.play().catch(e => console.error(e))
       } else {
-        audioRef.current.currentTime = elapsed
+        audioRef.current.pause()
       }
-
-      audioRef.current.play()
-      setShowAudioPrompt(false)
     }
+    setIsReady(true)
   }
 
   return (
-    <div className="flex flex-col h-svh justify-between relative bg-black">
+    <div className="flex flex-col h-svh justify-between relative bg-black overflow-hidden">
       {/* Background Music */}
       <audio ref={audioRef} src="/music/mus.mp3" loop />
 
-      {/* Temp Background Layer (Visible initially, fades out) */}
-      <AnimatePresence>
-        {!startVisuals && (
+      {/* 1. Permission Screen (Visible only if NOT ready) */}
+      <AnimatePresence mode="wait">
+        {!isReady && (
           <motion.div
-            initial={{ opacity: 0.3 }}
+            key="permission-screen"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.5 } }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black text-white"
+          >
+            <motion.h2
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-2xl sm:text-3xl md:text-4xl mb-8 text-center font-light tracking-wide"
+              style={{ fontFamily: "var(--font-instrument-serif)" }}
+            >
+              Would you like to hear us?
+            </motion.h2>
+
+            <div className="flex gap-8">
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                onClick={() => handlePermission(true)}
+                className="text-sm uppercase tracking-widest hover:text-[#ffc700] transition-colors pb-1 border-b border-transparent hover:border-[#ffc700]"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                Yes
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                onClick={() => handlePermission(false)}
+                className="text-sm uppercase tracking-widest text-white/50 hover:text-white transition-colors pb-1 border-b border-transparent hover:border-white"
+                style={{ fontFamily: "var(--font-geist-mono)" }}
+              >
+                No
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. Intro Sequence (Particles + Stay Human) - Visible only AFTER ready and BEFORE main visuals */}
+      <AnimatePresence>
+        {isReady && !startVisuals && (
+          <motion.div
+            key="intro-particles"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1.5 }}
             className="absolute inset-0 z-1"
@@ -94,7 +126,7 @@ export function Hero() {
         )}
       </AnimatePresence>
 
-      {/* Main Visuals (Always mounted for preloading, fades in) */}
+      {/* 3. Main Visuals (Video/Image/GL) - Always mounted but hidden until startVisuals */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: startVisuals ? 1 : 0 }}
@@ -152,75 +184,47 @@ export function Hero() {
         )}
       </AnimatePresence>
 
-      {/* Audio Prompt Button */}
-      <AnimatePresence>
-        {showAudioPrompt && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            onClick={enableAudio}
-            className="absolute bottom-8 right-8 z-50 px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white/90 hover:bg-white/20 transition-all flex items-center gap-3 cursor-pointer group"
-            style={{ fontFamily: "var(--font-geist-mono)" }}
-          >
-            <span className="text-xs uppercase tracking-widest">Enable Sound</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="group-hover:scale-110 transition-transform"
-            >
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            </svg>
-          </motion.button>
-        )}
-      </AnimatePresence>
-
+      {/* 4. Text Content ("stay human" -> "stay tuned") */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-16 pointer-events-none">
-        <motion.div
-          initial={{ y: "-45vh", scale: 1.5, opacity: 0 }}
-          animate={{
-            y: startVisuals ? 0 : "-45vh",
-            scale: startVisuals ? 1 : 1.5,
-            opacity: 1
-          }}
-          transition={{
-            duration: 2,
-            ease: [0.16, 1, 0.3, 1], // Custom bezier for very smooth landing
-            opacity: { duration: 1 }
-          }}
-          className="text-container pointer-events-auto flex flex-col items-center"
-        >
-          <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl gradient-text glitch text-center"
-            data-text="stay human"
-            style={{ fontFamily: "var(--font-instrument-serif)" }}
-          >
-            stay human
-          </motion.h1>
+        {isReady && (
           <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: startVisuals ? "60%" : 0 }}
-            transition={{ duration: 1, delay: startVisuals ? 0.5 : 0, ease: "easeOut" }}
-            className="divider"
-          />
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: startVisuals ? 1 : 0 }}
-            transition={{ duration: 1, delay: startVisuals ? 0.2 : 0, ease: "easeOut" }}
-            className="text-sm sm:text-base md:text-lg text-balance mt-8 max-w-[440px] mx-auto glow-text text-center"
-            style={{ fontFamily: "var(--font-geist-mono)" }}
+            initial={{ y: "-45vh", scale: 1.5, opacity: 0 }}
+            animate={{
+              y: startVisuals ? 0 : "-45vh",
+              scale: startVisuals ? 1 : 1.5,
+              opacity: 1
+            }}
+            transition={{
+              duration: 2,
+              ease: [0.16, 1, 0.3, 1],
+              opacity: { duration: 1 }
+            }}
+            className="text-container pointer-events-auto flex flex-col items-center"
           >
-            stay tuned
-          </motion.p>
-        </motion.div>
+            <motion.h1
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl gradient-text glitch text-center"
+              data-text="stay human"
+              style={{ fontFamily: "var(--font-instrument-serif)" }}
+            >
+              stay human
+            </motion.h1>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: startVisuals ? "60%" : 0 }}
+              transition={{ duration: 1, delay: startVisuals ? 0.5 : 0, ease: "easeOut" }}
+              className="divider"
+            />
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: startVisuals ? 1 : 0 }}
+              transition={{ duration: 1, delay: startVisuals ? 0.2 : 0, ease: "easeOut" }}
+              className="text-sm sm:text-base md:text-lg text-balance mt-8 max-w-[440px] mx-auto glow-text text-center"
+              style={{ fontFamily: "var(--font-geist-mono)" }}
+            >
+              stay tuned
+            </motion.p>
+          </motion.div>
+        )}
       </div>
 
       <style jsx>{`
