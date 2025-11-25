@@ -45,7 +45,6 @@ export function Hero() {
   const handlePermission = (allowAudio: boolean) => {
     if (audioRef.current) {
       if (allowAudio) {
-        audioRef.current.currentTime = 0 // Ensure start from 0
         audioRef.current.play().catch(e => console.error(e))
       } else {
         audioRef.current.pause()
@@ -189,7 +188,7 @@ export function Hero() {
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-16 pointer-events-none">
         {isReady && (
           <motion.div
-            initial={{ y: "-45vh", scale: 1.5, opacity: 0 }}
+            initial={{ y: "-45vh", scale: 1.5, opacity: 1 }}
             animate={{
               y: startVisuals ? 0 : "-45vh",
               scale: startVisuals ? 1 : 1.5,
@@ -197,8 +196,7 @@ export function Hero() {
             }}
             transition={{
               duration: 2,
-              ease: [0.16, 1, 0.3, 1],
-              opacity: { duration: 0.8, delay: 0.3 } // Added delay to wait for permission screen exit
+              ease: [0.16, 1, 0.3, 1]
             }}
             className="text-container pointer-events-auto flex flex-col items-center"
           >
