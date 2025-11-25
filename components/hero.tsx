@@ -36,8 +36,8 @@ export function Hero() {
       {/* Background Music */}
       <audio ref={audioRef} src="/music/mus.mp3" loop />
 
+      {/* Temp Background Layer (Visible initially, fades out) */}
       <AnimatePresence>
-        {/* Temp Background Layer (Visible initially, fades out) */}
         {!startVisuals && (
           <motion.div
             initial={{ opacity: 0.3 }}
@@ -50,12 +50,58 @@ export function Hero() {
               noiseIntensity={0.001}
               className="bg-transparent"
             >
-              {/* Empty children to override default text */}
               <></>
             </ParticlesBackground>
           </motion.div>
         )}
+      </AnimatePresence>
 
+      {/* Main Visuals (Always mounted for preloading, fades in) */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: startVisuals ? 1 : 0 }}
+        transition={{ duration: 1.5 }}
+        className="absolute inset-0 z-0"
+      >
+        {/* Video Background Layer */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            style={{
+              opacity: 0.6,
+            }}
+          >
+            <source src="/vid/mdia.mp4" type="video/mp4" />
+          </video>
+        </div>
+
+        {/* Image Overlay Layer with Blend Mode */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: "url(/images/iinsan.png)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: 0.5,
+            mixBlendMode: "overlay",
+          }}
+        />
+
+        {/* Dark Overlay for Better Text Contrast */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6))",
+          }}
+        />
+      </motion.div>
+
+      {/* GL Component (Conditionally rendered to start animation on time) */}
+      <AnimatePresence>
         {startVisuals && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -63,42 +109,6 @@ export function Hero() {
             transition={{ duration: 1.5 }}
             className="absolute inset-0 z-0"
           >
-            {/* Video Background Layer */}
-            <div className="absolute inset-0 z-0 overflow-hidden">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-                style={{
-                  opacity: 0.6,
-                }}
-              >
-                <source src="/vid/mdia.mp4" type="video/mp4" />
-              </video>
-            </div>
-
-            {/* Image Overlay Layer with Blend Mode */}
-            <div
-              className="absolute inset-0 z-0"
-              style={{
-                backgroundImage: "url(/images/iinsan.png)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                opacity: 0.5,
-                mixBlendMode: "overlay",
-              }}
-            />
-
-            {/* Dark Overlay for Better Text Contrast */}
-            <div
-              className="absolute inset-0 z-0"
-              style={{
-                background: "linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6))",
-              }}
-            />
-
             <GL hovering={hovering} />
           </motion.div>
         )}
