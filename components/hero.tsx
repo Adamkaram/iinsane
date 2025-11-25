@@ -192,19 +192,25 @@ export function Hero() {
             animate={{
               y: startVisuals ? 0 : "-45vh",
               scale: startVisuals ? 1 : 1.5,
-              opacity: 1,
-              filter: startVisuals ? "grayscale(0)" : "grayscale(1)"
+              opacity: 1
             }}
             transition={{
               duration: 2,
               ease: [0.16, 1, 0.3, 1]
             }}
             className="text-container pointer-events-auto flex flex-col items-center"
+            style={{
+              filter: "brightness(1.1) contrast(1.1)"
+            }}
           >
             <motion.h1
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl gradient-text glitch text-center"
+              className={`text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-center ${startVisuals ? 'gradient-text glitch' : ''}`}
               data-text="stay human"
-              style={{ fontFamily: "var(--font-instrument-serif)" }}
+              style={{
+                fontFamily: "var(--font-instrument-serif)",
+                color: startVisuals ? undefined : "#666",
+                filter: startVisuals ? undefined : "none"
+              }}
             >
               stay human
             </motion.h1>
