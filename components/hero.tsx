@@ -9,8 +9,12 @@ export function Hero() {
   const [startVisuals, setStartVisuals] = useState(false)
   const [showAudioPrompt, setShowAudioPrompt] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const startTimeRef = useRef<number>(0)
 
   useEffect(() => {
+    // Record start time
+    startTimeRef.current = Date.now()
+
     // Delay visuals by exactly 5.758 seconds
     const timer = setTimeout(() => {
       setStartVisuals(true)
@@ -22,7 +26,7 @@ export function Hero() {
         audioRef.current.volume = 0.5
         try {
           await audioRef.current.play()
-          setShowAudioPrompt(false)
+          // If successful, prompt is already hidden by default or onPlay listener
         } catch (error) {
           console.log("Auto-play prevented. Showing audio prompt.")
           setShowAudioPrompt(true)
@@ -30,13 +34,36 @@ export function Hero() {
       }
     }
 
+    // Safety: Ensure prompt is hidden if audio starts playing by any means
+    const onPlay = () => setShowAudioPrompt(false)
+    const audioEl = audioRef.current
+
+    if (audioEl) {
+      audioEl.addEventListener('play', onPlay)
+    }
+
     playAudio()
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      if (audioEl) {
+        audioEl.removeEventListener('play', onPlay)
+      }
+    }
   }, [])
 
   const enableAudio = () => {
     if (audioRef.current) {
+      // Calculate elapsed time since mount in seconds
+      const elapsed = (Date.now() - startTimeRef.current) / 1000
+
+      // Set current time (handling loop if duration is available)
+      if (audioRef.current.duration && !isNaN(audioRef.current.duration)) {
+        audioRef.current.currentTime = elapsed % audioRef.current.duration
+      } else {
+        audioRef.current.currentTime = elapsed
+      }
+
       audioRef.current.play()
       setShowAudioPrompt(false)
     }
