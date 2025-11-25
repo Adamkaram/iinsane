@@ -1,62 +1,126 @@
 "use client"
 import { GL } from "./gl"
-import { useState } from "react"
-import { motion } from "framer-motion"
+import { useState, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import ParticlesBackground from "./particles-background"
 
 export function Hero() {
   const [hovering, setHovering] = useState(false)
+  const [startVisuals, setStartVisuals] = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null)
+
+  useEffect(() => {
+    // Delay visuals by exactly 5.758 seconds
+    const timer = setTimeout(() => {
+      setStartVisuals(true)
+    }, 5758)
+
+    // Attempt to play audio
+    if (audioRef.current) {
+      audioRef.current.volume = 0.5
+      const playPromise = audioRef.current.play()
+
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log("Auto-play was prevented. User interaction is required to play audio.")
+          // Optional: Add a UI element to ask user to play if needed
+        })
+      }
+    }
+
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
-    <div className="flex flex-col h-svh justify-between relative">
-      {/* Video Background Layer */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover"
-          style={{
-            opacity: 0.6,
-          }}
-        >
-          <source src="/vid/mdia.mp4" type="video/mp4" />
-        </video>
-      </div>
+    <div className="flex flex-col h-svh justify-between relative bg-black">
+      {/* Background Music */}
+      <audio ref={audioRef} src="/music/mus.mp3" loop />
 
-      {/* Image Overlay Layer with Blend Mode */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: "url(/images/iinsan.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: 0.5,
-          mixBlendMode: "overlay",
-        }}
-      />
+      <AnimatePresence>
+        {/* Temp Background Layer (Visible initially, fades out) */}
+        {!startVisuals && (
+          <motion.div
+            initial={{ opacity: 0.3 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5 }}
+            className="absolute inset-0 z-1"
+          >
+            <ParticlesBackground
+              particleCount={1000}
+              noiseIntensity={0.001}
+              className="bg-transparent"
+            >
+              {/* Empty children to override default text */}
+              <></>
+            </ParticlesBackground>
+          </motion.div>
+        )}
 
-      {/* Dark Overlay for Better Text Contrast */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6))",
-        }}
-      />
+        {startVisuals && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5 }}
+            className="absolute inset-0 z-0"
+          >
+            {/* Video Background Layer */}
+            <div className="absolute inset-0 z-0 overflow-hidden">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+                style={{
+                  opacity: 0.6,
+                }}
+              >
+                <source src="/vid/mdia.mp4" type="video/mp4" />
+              </video>
+            </div>
 
-      <GL hovering={hovering} />
+            {/* Image Overlay Layer with Blend Mode */}
+            <div
+              className="absolute inset-0 z-0"
+              style={{
+                backgroundImage: "url(/images/iinsan.png)",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                opacity: 0.5,
+                mixBlendMode: "overlay",
+              }}
+            />
 
-      <div className="pb-16 mt-auto text-center relative z-10">
+            {/* Dark Overlay for Better Text Contrast */}
+            <div
+              className="absolute inset-0 z-0"
+              style={{
+                background: "linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6))",
+              }}
+            />
+
+            <GL hovering={hovering} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-16 pointer-events-none">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="text-container"
+          initial={{ y: "-45vh", scale: 1.5, opacity: 0 }}
+          animate={{
+            y: startVisuals ? 0 : "-45vh",
+            scale: startVisuals ? 1 : 1.5,
+            opacity: 1
+          }}
+          transition={{
+            duration: 2,
+            ease: [0.16, 1, 0.3, 1], // Custom bezier for very smooth landing
+            opacity: { duration: 1 }
+          }}
+          className="text-container pointer-events-auto flex flex-col items-center"
         >
           <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl gradient-text glitch"
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl gradient-text glitch text-center"
             data-text="stay human"
             style={{ fontFamily: "var(--font-instrument-serif)" }}
           >
@@ -64,15 +128,15 @@ export function Hero() {
           </motion.h1>
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: "60%" }}
-            transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+            animate={{ width: startVisuals ? "60%" : 0 }}
+            transition={{ duration: 1, delay: startVisuals ? 0.5 : 0, ease: "easeOut" }}
             className="divider"
           />
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-            className="text-sm sm:text-base md:text-lg text-balance mt-8 max-w-[440px] mx-auto glow-text"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: startVisuals ? 1 : 0 }}
+            transition={{ duration: 1, delay: startVisuals ? 0.2 : 0, ease: "easeOut" }}
+            className="text-sm sm:text-base md:text-lg text-balance mt-8 max-w-[440px] mx-auto glow-text text-center"
             style={{ fontFamily: "var(--font-geist-mono)" }}
           >
             stay tuned
